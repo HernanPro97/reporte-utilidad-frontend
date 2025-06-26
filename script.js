@@ -128,43 +128,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const labels = [];
         const dataPoints = [];
         const backgroundColors = [];
-
-        // Paleta de colores original
+        
         const colorPalette = {
-            'Costo del Servicio': 'rgb(239, 68, 68)',
-            'Gastos Operativos': 'rgb(245, 158, 11)',
-            'Impuestos': 'rgb(234, 179, 8)',
-            'Utilidad Neta': 'rgb(34, 197, 94)'
+            "Costo del Servicio": '#ef4444',       // Red-500
+            "Venta y Marketing": '#f97316',      // Orange-500
+            "Generales y Admin.": '#8b5cf6',   // Violet-500
+            "Mantenimiento": '#3b82f6'         // Blue-500
         };
 
         if (data) {
-            if (data.totalCostoServicio > 0) {
-                labels.push('Costo del Servicio');
-                dataPoints.push(data.totalCostoServicio);
-                backgroundColors.push(colorPalette['Costo del Servicio']);
-            }
-            if (data.totalGastosOperativos > 0) {
-                labels.push('Gastos Operativos');
-                dataPoints.push(data.totalGastosOperativos);
-                backgroundColors.push(colorPalette['Gastos Operativos']);
-            }
-            if (data.impuestos > 0) {
-                labels.push('Impuestos');
-                dataPoints.push(data.impuestos);
-                backgroundColors.push(colorPalette['Impuestos']);
-            }
-            // Solo añadir Utilidad Neta si es positiva
-            if (data.utilidadNeta > 0) {
-                labels.push('Utilidad Neta');
-                dataPoints.push(data.utilidadNeta);
-                backgroundColors.push(colorPalette['Utilidad Neta']);
+            const costs = {
+                "Costo del Servicio": data.totalCostoServicio,
+                "Venta y Marketing": data.totalGastosVentaMarketing,
+                "Generales y Admin.": data.totalGastosGeneralesAdmin,
+                "Mantenimiento": data.totalGastosMantenimiento
+            };
+
+            for (const [label, value] of Object.entries(costs)) {
+                if (value > 0) {
+                    labels.push(label);
+                    dataPoints.push(value);
+                    backgroundColors.push(colorPalette[label]);
+                }
             }
         }
 
         const hasData = dataPoints.length > 0;
-
         const chartData = {
-            labels: hasData ? labels : ['Sin datos para mostrar'],
+            labels: hasData ? labels : ['Sin datos de costos'],
             datasets: [{
                 data: hasData ? dataPoints : [1],
                 backgroundColor: hasData ? backgroundColors : ['#e5e7eb'],
@@ -179,13 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
             options: {
                 responsive: true,
                 plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    title: {
-                        display: true,
-                        text: 'Estructura de Costos y Utilidad'
-                    }
+                    legend: { position: 'top' },
+                    title: { display: true, text: 'Distribución de Costos y Gastos' }
                 }
             }
         });
@@ -233,12 +219,10 @@ document.addEventListener('DOMContentLoaded', () => {
         set('participacionSocio1', participacionSocio1, true); set('participacionSocio2', participacionSocio2, true);
         set('reservaLegal', reservaLegal, true); set('utilidadRetenida', utilidadRetenida);
 
-        // =========== INICIO CÓDIGO AÑADIDO ===========
         // Actualizar las nuevas tarjetas de KPI
         document.getElementById('kpi-card-margen-bruto').textContent = `${porcBruta.toFixed(2)}%`;
         document.getElementById('kpi-card-margen-operativo').textContent = `${porcOperativa.toFixed(2)}%`;
         document.getElementById('kpi-card-margen-neto').textContent = `${porcNeta.toFixed(2)}%`;
-        // =========== FIN CÓDIGO AÑADIDO ===========
     }
 
     document.getElementById('resumen-historico-body').addEventListener('click', e => { if (e.target.matches('.btn-ver-detalle')) cargarDetalleEnEditor(e.target.dataset.id); if (e.target.matches('.btn-eliminar')) eliminarReporte(e.target.dataset.id); });
