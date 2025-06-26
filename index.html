@@ -4,124 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Resultados - BCC</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f0f2f5; }
+        /* Clases personalizadas para transiciones */
+        .transition-all { transition: all 0.3s ease-in-out; }
+    </style>
 </head>
-<body>
+<body class="bg-gray-100 text-gray-800">
 
     <!-- NAVEGACIÓN PRINCIPAL -->
-    <nav class="container" style="margin-bottom: 2rem; padding: 1rem; display: flex; gap: 1rem; background-color: var(--primary-color);">
-        <button id="nav-dashboard" class="secondary-btn" style="background-color: white; color: var(--primary-color);">Dashboard</button>
-        <button id="nav-editor" class="secondary-btn">Editor de Reportes</button>
-    </nav>
-    
-    <!-- "PÁGINA" DEL EDITOR DE REPORTES -->
-    <main id="page-editor" class="page-content" style="display: none;">
-        <div class="container" id="reporte-container">
-            <!-- Formulario de reporte -->
-            <div class="header">
-                <span class="company-logo">BCC</span>
-                <div class="header-title">
-                    <h1>Estado de Resultados</h1>
-                    <div class="date-selector">
-                        <select id="month-select">
-                            <option value="0">Enero</option> <option value="1">Febrero</option> <option value="2">Marzo</option>
-                            <option value="3">Abril</option> <option value="4">Mayo</option> <option value="5">Junio</option>
-                            <option value="6">Julio</option> <option value="7">Agosto</option> <option value="8">Septiembre</option>
-                            <option value="9">Octubre</option> <option value="10">Noviembre</option> <option value="11">Diciembre</option>
-                        </select>
-                        <select id="year-select"></select>
+    <header class="bg-white shadow-md">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="font-bold text-2xl text-blue-600">BCC</span>
+                    <div class="hidden md:block ml-10">
+                        <div class="flex items-baseline space-x-4">
+                            <button id="nav-dashboard" class="nav-button bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium">Dashboard</button>
+                            <button id="nav-editor" class="nav-button text-gray-500 hover:bg-gray-200 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Editor de Reportes</button>
+                        </div>
                     </div>
                 </div>
             </div>
-            <!-- Secciones de Ingresos, Gastos, etc. -->
-            <details class="section" open data-section-id="ingresos"><summary class="section-title">(+) Ingresos</summary><div class="rows-container"></div><div class="add-row-container"><button class="add-row-btn" data-category="ingresos">+ Agregar Fila</button></div><div class="line-item subtotal-line"><label>Total de Ingresos</label><span id="totalIngresos" class="result">$ 0.00</span></div></details>
-            <details class="section" open data-section-id="costoServicio"><summary class="section-title">(-) Costo del Servicio</summary><div class="rows-container"></div><div class="add-row-container"><button class="add-row-btn" data-category="costo-servicio">+ Agregar Fila</button></div><div class="line-item subtotal-line"><label>Total Costo del Servicio</label><span id="totalCostoServicio" class="result-secondary">($ 0.00)</span></div></details>
-            <div class="line-item total-line major-total"><label> (=) UTILIDAD BRUTA</label><span id="utilidadBruta" class="result">$ 0.00</span></div>
-            <details class="section" open data-section-id="gastosOperativos"><summary class="section-title">(-) Gastos Operativos</summary><div class="subsection-title">Gastos de Venta y Marketing</div><div class="rows-container sub-section-rows" data-subsection-id="gastosVentaMarketing"></div><div class="add-row-container"><button class="add-row-btn" data-category="gastos-op">+ Gasto Venta</button></div><div class="subsection-title">Gastos Generales y Administrativos</div><div class="rows-container sub-section-rows" data-subsection-id="gastosGeneralesAdmin"></div><div class="add-row-container"><button class="add-row-btn" data-category="gastos-op">+ Gasto Admin.</button></div><div class="subsection-title">Mantenimiento, Suministros y Equipos</div><div class="rows-container sub-section-rows" data-subsection-id="gastosMantenimiento"></div><div class="add-row-container"><button class="add-row-btn" data-category="gastos-op">+ Gasto Mant.</button></div><div class="line-item subtotal-line"><label>Total Gastos Operativos</label><span id="totalGastosOperativos" class="result-secondary">($ 0.00)</span></div></details>
-            <div class="line-item total-line major-total"><label> (=) UTILIDAD OPERATIVA</label><span id="utilidadOperativa" class="result">$ 0.00</span></div>
-            <div class="section"><div class="line-item total-line"><label> (=) UTILIDAD ANTES DE IMPUESTOS</label><span id="utilidadAntesImpuestos" class="result">$ 0.00</span></div><div class="line-item"><label>(-) Impuestos</label><input type="text" id="impuestosFijos" class="input-field" placeholder="$ 0.00"></div><div class="line-item final-result"><label> (=) UTILIDAD NETA</label><span id="utilidadNeta" class="result-final">$ 0.00</span></div></div>
-            <div class="metrics-container"><div class="metric-box"><h3>Margen Bruto</h3><p id="margenBruto">0.00%</p></div><div class="metric-box"><h3>Margen Operativo</h3><p id="margenOperativo">0.00%</p></div><div class="metric-box"><h3>Margen Neto</h3><p id="margenNeto">0.00%</p></div></div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- "PÁGINA" DEL DASHBOARD -->
+        <div id="page-dashboard" class="page-content">
+            <!-- Tarjetas de KPI -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow-md flex items-center"><div class="mr-4"><svg class="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1m0-1V4m0 2v1m0 0v1m0-1v-1m0 0h1m-1 0H9.401M12 16v1m0 1v1m0-2v-1m0 0v-1m0 0h1m-1 0H9.401"></path></svg></div><div><p class="text-sm font-medium text-gray-500">Utilidad Neta (Últ. Mes)</p><p id="kpi-utilidad-neta" class="text-2xl font-bold">$0.00</p></div></div>
+                <div class="bg-white p-6 rounded-lg shadow-md flex items-center"><div class="mr-4"><svg class="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg></div><div><p class="text-sm font-medium text-gray-500">Ingresos Totales (Últ. Mes)</p><p id="kpi-ingresos" class="text-2xl font-bold">$0.00</p></div></div>
+                <div class="bg-white p-6 rounded-lg shadow-md flex items-center"><div class="mr-4"><svg class="h-10 w-10 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg></div><div><p class="text-sm font-medium text-gray-500">Margen Neto (Últ. Mes)</p><p id="kpi-margen-neto" class="text-2xl font-bold">0.00%</p></div></div>
+            </div>
+
+            <!-- Gráficos -->
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+                <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow-md"><canvas id="graficoEvolucion"></canvas></div>
+                <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md"><canvas id="graficoGastos"></canvas></div>
+            </div>
             
-            <!-- SECCIONES RESTAURADAS -->
-            <div class="info-section" data-section-id="sueldosDirectivos">
-                <h3>Sueldos Directivos (Participación sobre Utilidad Neta)</h3>
-                <div class="line-item">
-                    <label>Director de BCC (12% de Utilidad Neta)</label>
-                    <span id="sueldoDirector" class="result-secondary">($ 0.00)</span>
-                </div>
-                <div class="line-item">
-                    <label>Presidente de BCC (15% de Utilidad Neta)</label>
-                    <span id="sueldoPresidente" class="result-secondary">($ 0.00)</span>
-                </div>
-                <div class="line-item subtotal-line">
-                    <label>Total Sueldos Directivos</label>
-                    <span id="totalSueldosDirectivos" class="result-secondary">($ 0.00)</span>
-                </div>
+            <!-- Tabla Histórica -->
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="p-6 border-b border-gray-200"><h3 class="text-lg font-medium leading-6 text-gray-900">Resumen Histórico</h3></div>
+                <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Período</th><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ingresos</th><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utilidad Bruta</th><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utilidad Neta</th><th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th></tr></thead><tbody id="resumen-historico-body" class="bg-white divide-y divide-gray-200"></tbody></table></div>
             </div>
-
-            <div class="info-section" data-section-id="distribucion">
-                <h3>Distribución de Utilidades (Adicional)</h3>
-                <p class="info-text">Esta sección muestra cómo se puede repartir la Utilidad Neta restante.</p>
-                <div class="line-item"><label>Utilidad Neta (Después de Sueldos Directivos)</label><span id="utilidadNetaDespuesDirectivos" class="result">$ 0.00</span></div>
-                
-                <div class="line-item">
-                    <label>(-) Participación Socio 1 (10%)</label>
-                    <span id="participacionSocio1" class="result-secondary">($ 0.00)</span>
-                </div>
-                <div class="line-item">
-                    <label>(-) Participación Socio 2 (10%)</label>
-                    <span id="participacionSocio2" class="result-secondary">($ 0.00)</span>
-                </div>
-                <div class="line-item">
-                    <label>(-) Reserva Legal (10% de lo restante)</label>
-                    <span id="reservaLegal" class="result-secondary">($ 0.00)</span>
-                </div>
-                <div class="line-item total-line">
-                    <label> (=) Utilidad Retenida (Reinversión)</label>
-                    <span id="utilidadRetenida" class="result">$ 0.00</span>
-                </div>
-            </div>
-            <!-- FIN DE SECCIONES RESTAURADAS -->
         </div>
-        
-        <div class="button-container">
-            <button id="save-data-btn" class="secondary-btn">Guardar Datos</button>
-            <button id="export-pdf-btn">Exportar a PDF</button>
+
+        <!-- "PÁGINA" DEL EDITOR DE REPORTES -->
+        <div id="page-editor" class="page-content hidden">
+             <div class="bg-white rounded-lg shadow-md">
+                <div id="reporte-container">
+                    <div class="p-6 border-b border-gray-200 flex justify-between items-center"><h1 class="text-xl font-semibold">Estado de Resultados</h1><div class="flex items-center space-x-2"><select id="month-select" class="form-select"></select><select id="year-select" class="form-select"></select></div></div>
+                    <div class="p-6 space-y-6">
+                        <!-- Secciones del formulario -->
+                        <details class="section" open data-section-id="ingresos"><summary class="text-lg font-medium text-blue-700 cursor-pointer">(+) Ingresos</summary><div class="pl-4 mt-4 space-y-2 rows-container"></div><div class="text-right mt-2"><button class="add-row-btn">+ Fila</button></div><div class="line-item-total"><label>Total Ingresos</label><span id="totalIngresos">$ 0.00</span></div></details>
+                        <details class="section" open data-section-id="costoServicio"><summary class="text-lg font-medium text-blue-700 cursor-pointer">(-) Costo del Servicio</summary><div class="pl-4 mt-4 space-y-2 rows-container"></div><div class="text-right mt-2"><button class="add-row-btn">+ Fila</button></div><div class="line-item-total"><label>Total Costo del Servicio</label><span id="totalCostoServicio">($ 0.00)</span></div></details>
+                        <div class="line-item-major-total"><label>UTILIDAD BRUTA</label><div class="text-right"><span id="utilidadBruta">$ 0.00</span><span id="porcentajeUtilidadBruta" class="text-sm text-gray-500 ml-2">0.00%</span></div></div>
+                        <details class="section" open data-section-id="gastosOperativos"><summary class="text-lg font-medium text-blue-700 cursor-pointer">(-) Gastos Operativos</summary><div class="pl-4 mt-4 space-y-4"><div class="subsection"><h4 class="font-semibold text-gray-600">Gastos de Venta y Marketing</h4><div class="mt-2 space-y-2 rows-container" data-subsection-id="gastosVentaMarketing"></div><div class="text-right mt-2"><button class="add-row-btn">+ Gasto Venta</button></div></div><div class="subsection"><h4 class="font-semibold text-gray-600">Gastos Generales y Admin.</h4><div class="mt-2 space-y-2 rows-container" data-subsection-id="gastosGeneralesAdmin"></div><div class="text-right mt-2"><button class="add-row-btn">+ Gasto Admin.</button></div></div><div class="subsection"><h4 class="font-semibold text-gray-600">Mantenimiento y Suministros</h4><div class="mt-2 space-y-2 rows-container" data-subsection-id="gastosMantenimiento"></div><div class="text-right mt-2"><button class="add-row-btn">+ Gasto Mant.</button></div></div></div><div class="line-item-total"><label>Total Gastos Operativos</label><span id="totalGastosOperativos">($ 0.00)</span></div></details>
+                        <div class="line-item-major-total"><label>UTILIDAD OPERATIVA</label><div class="text-right"><span id="utilidadOperativa">$ 0.00</span><span id="porcentajeUtilidadOperativa" class="text-sm text-gray-500 ml-2">0.00%</span></div></div>
+                        <div class="space-y-4"><div class="line-item-total"><label>UTILIDAD ANTES DE IMPUESTOS</label><span id="utilidadAntesImpuestos">$ 0.00</span></div><div class="line-item-editable"><label>(-) Impuestos</label><input type="text" id="impuestosFijos" placeholder="$ 0.00"></div></div>
+                        <div class="line-item-final-total"><label>UTILIDAD NETA</label><div class="text-right"><span id="utilidadNeta">$ 0.00</span><span id="porcentajeUtilidadNeta" class="text-sm text-gray-200 ml-2">0.00%</span></div></div>
+                    </div>
+                </div>
+                 <div class="px-6 py-4 bg-gray-50 text-right"><button id="save-data-btn" class="btn btn-primary">Guardar Reporte</button></div>
+             </div>
         </div>
     </main>
 
-    <!-- "PÁGINA" DEL DASHBOARD -->
-    <main id="page-dashboard" class="page-content">
-        <div class="container" style="margin-top: 2rem;">
-            <div class="header"><h2 style="color: var(--primary-color);">Resumen Histórico</h2></div>
-            <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid var(--border-color);">
-                            <th style="padding: 1rem;">Período</th>
-                            <th style="padding: 1rem;">Ingresos Totales</th>
-                            <th style="padding: 1rem;">Utilidad Bruta</th>
-                            <th style="padding: 1rem;">Utilidad Neta</th>
-                            <th style="padding: 1rem; text-align: center;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resumen-historico-body"></tbody>
-                </table>
-            </div>
-        </div>
-        <div class="container" style="margin-top: 2rem;">
-            <div class="header"><h2 style="color: var(--primary-color);">Análisis Gráfico</h2></div>
-            <div><canvas id="graficoEvolucion"></canvas></div>
-        </div>
-    </main>
-
+    <!-- Todos los scripts al final -->
     <script src="script.js"></script>
 </body>
 </html>
