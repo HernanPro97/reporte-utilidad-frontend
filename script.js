@@ -232,6 +232,13 @@ document.addEventListener('DOMContentLoaded', () => {
         set('utilidadNetaDespuesDirectivos', utilidadNetaDespuesDirectivos);
         set('participacionSocio1', participacionSocio1, true); set('participacionSocio2', participacionSocio2, true);
         set('reservaLegal', reservaLegal, true); set('utilidadRetenida', utilidadRetenida);
+
+        // =========== INICIO CÓDIGO AÑADIDO ===========
+        // Actualizar las nuevas tarjetas de KPI
+        document.getElementById('kpi-card-margen-bruto').textContent = `${porcBruta.toFixed(2)}%`;
+        document.getElementById('kpi-card-margen-operativo').textContent = `${porcOperativa.toFixed(2)}%`;
+        document.getElementById('kpi-card-margen-neto').textContent = `${porcNeta.toFixed(2)}%`;
+        // =========== FIN CÓDIGO AÑADIDO ===========
     }
 
     document.getElementById('resumen-historico-body').addEventListener('click', e => { if (e.target.matches('.btn-ver-detalle')) cargarDetalleEnEditor(e.target.dataset.id); if (e.target.matches('.btn-eliminar')) eliminarReporte(e.target.dataset.id); });
