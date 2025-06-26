@@ -67,6 +67,23 @@
                         <div class="space-y-2 py-4"><div class="line-item-total border-t pt-4"><label>UTILIDAD ANTES DE IMPUESTOS</label><span id="utilidadAntesImpuestos">$ 0.00</span></div><div class="line-item-editable"><label class="text-gray-600 font-semibold">(-) Impuestos</label><input type="text" id="impuestosFijos" placeholder="$ 0.00" class="input-field"></div></div>
                         <div class="line-item-final-total rounded-b-lg"><label>UTILIDAD NETA</label><div class="text-right"><span class="text-2xl" id="utilidadNeta">$ 0.00</span><span class="text-base text-gray-200 ml-2" id="porcentajeUtilidadNeta">0.00%</span></div></div>
                         
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8">
+                            <div class="bg-slate-50 p-6 rounded-lg shadow text-center transition-all hover:shadow-lg hover:-translate-y-1">
+                                <p class="text-sm font-medium text-gray-500">Margen Bruto</p>
+                                <p id="kpi-card-margen-bruto" class="text-4xl font-bold text-green-600 mt-1">0.00%</p>
+                                <p class="text-xs text-gray-400 mt-2">Rentabilidad directa de tus campañas.</p>
+                            </div>
+                            <div class="bg-slate-50 p-6 rounded-lg shadow text-center transition-all hover:shadow-lg hover:-translate-y-1">
+                                <p class="text-sm font-medium text-gray-500">Margen Operativo</p>
+                                <p id="kpi-card-margen-operativo" class="text-4xl font-bold text-green-600 mt-1">0.00%</p>
+                                <p class="text-xs text-gray-400 mt-2">Eficiencia de la operación del negocio.</p>
+                            </div>
+                            <div class="bg-slate-50 p-6 rounded-lg shadow text-center transition-all hover:shadow-lg hover:-translate-y-1">
+                                <p class="text-sm font-medium text-gray-500">Margen Neto</p>
+                                <p id="kpi-card-margen-neto" class="text-4xl font-bold text-green-600 mt-1">0.00%</p>
+                                 <p class="text-xs text-gray-400 mt-2">Ganancia final real de la empresa.</p>
+                            </div>
+                        </div>
                         <div class="info-section"><h3 class="text-lg">Sueldos Directivos (Participación sobre Utilidad Neta)</h3><div class="line-item"><label>Director de BCC (12% de Utilidad Neta)</label><span id="sueldoDirector" class="font-semibold text-red-600">($ 0.00)</span></div><div class="line-item"><label>Presidente de BCC (15% de Utilidad Neta)</label><span id="sueldoPresidente" class="font-semibold text-red-600">($ 0.00)</span></div><div class="line-item border-t mt-2 pt-2"><label>Total Sueldos Directivos</label><span id="totalSueldosDirectivos" class="font-semibold text-red-600">($ 0.00)</span></div></div>
                         <div class="info-section"><h3>Distribución de Utilidades (Adicional)</h3><div class="line-item"><label>Utilidad Neta (Después de Sueldos Directivos)</label><span id="utilidadNetaDespuesDirectivos" class="font-semibold">$ 0.00</span></div><div class="line-item"><label>(-) Participación Socio 1 (10%)</label><span id="participacionSocio1" class="font-semibold text-red-600">($ 0.00)</span></div><div class="line-item"><label>(-) Participación Socio 2 (10%)</label><span id="participacionSocio2" class="font-semibold text-red-600">($ 0.00)</span></div><div class="line-item"><label>(-) Reserva Legal (10% de lo restante)</label><span id="reservaLegal" class="font-semibold text-red-600">($ 0.00)</span></div><div class="line-item-major-total mt-2"><label>UTILIDAD RETENIDA (Reinversión)</label><span id="utilidadRetenida">$ 0.00</span></div></div>
                     </div>
