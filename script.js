@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // ---- CONFIGURACIÓN ----
     const API_URL = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
         ? 'http://localhost:3000'
         : 'https://reporte-utilidad-backend.onrender.com';
@@ -99,16 +100,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // ---- GRÁFICOS ----
     function dibujarGraficoEvolucion(data) {
-        if (!document.getElementById('graficoEvolucion')) return;
-        const ctx = document.getElementById('graficoEvolucion').getContext('2d');
+        const canvas = document.getElementById('graficoEvolucion');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
         if (graficoEvolucion) graficoEvolucion.destroy();
         if (!data) return; 
         graficoEvolucion = new Chart(ctx, { type: 'line', data, options: { responsive: true, plugins: { legend: { position: 'top' }, title: { display: true, text: 'Evolución de Ingresos y Utilidad Neta' }}, scales: { y: { ticks: { callback: (v) => formatCurrency(v, true) }}} }});
     }
 
     function dibujarGraficoGastos(data) {
-        if(!document.getElementById('graficoGastos')) return;
-        const ctx = document.getElementById('graficoGastos').getContext('2d');
+        const canvas = document.getElementById('graficoGastos');
+        if(!canvas) return;
+        const ctx = canvas.getContext('2d');
         if (graficoGastos) graficoGastos.destroy();
         const hasData = data && Object.values(data).some(v => v > 0);
         const chartData = {
@@ -128,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await fetchData(`/api/reportes/detalle/${reporteId}`);
         if (!data) { alert('Error al cargar el reporte.'); return; }
 
-        resetEditorForm();
+        resetEditorForm(false); // No volver a crear filas por defecto
         
         document.getElementById('month-select').value = data.period.month;
         document.getElementById('year-select').value = data.period.year;
@@ -170,12 +173,12 @@ document.addEventListener('DOMContentLoaded', () => {
         set('totalCostoServicio', totalCostoServicio, true);
         set('totalGastosOperativos', totalGastosOperativos, true);
         set('utilidadBruta', utilidadBruta);
-        set('porcentajeUtilidadBruta', `${porcBruta.toFixed(2)}%`);
+        document.getElementById('porcentajeUtilidadBruta').textContent = `${porcBruta.toFixed(2)}%`;
         set('utilidadOperativa', utilidadOperativa);
-        set('porcentajeUtilidadOperativa', `${porcOperativa.toFixed(2)}%`);
+        document.getElementById('porcentajeUtilidadOperativa').textContent = `${porcOperativa.toFixed(2)}%`;
         set('utilidadAntesImpuestos', utilidadOperativa);
         set('utilidadNeta', utilidadNeta);
-        set('porcentajeUtilidadNeta', `${porcNeta.toFixed(2)}%`);
+        document.getElementById('porcentajeUtilidadNeta').textContent = `${porcNeta.toFixed(2)}%`;
         
         set('sueldoDirector', sueldoDirector, true);
         set('sueldoPresidente', sueldoPresidente, true);
@@ -187,6 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
         set('utilidadRetenida', utilidadRetenida);
     }
 
+    // ---- EVENT LISTENERS ----
     document.getElementById('resumen-historico-body').addEventListener('click', e => {
         if (e.target.matches('.btn-ver-detalle')) cargarDetalleEnEditor(e.target.dataset.id);
         if (e.target.matches('.btn-eliminar')) eliminarReporte(e.target.dataset.id);
@@ -245,6 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(error) { alert('No se pudo eliminar el reporte.'); }
     }
     
+    // ---- HELPER FUNCTIONS ----
     const formatCurrency = (v, short = false) => {
         const value = Number(v) || 0;
         if (short) {
@@ -254,13 +259,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
     };
-    const unformatCurrency = (v) => typeof v !== 'string' ? v || 0 : parseFloat(String(v).replace(/[^0-9$,().\s]+/g, "")) || 0;
+    const unformatCurrency = (v) => typeof v !== 'string' ? v || 0 : parseFloat(String(v).replace(/[^0-9.-]+/g, "")) || 0;
     
     const addFormattingEvents = (input) => {
         const originalValue = input.value;
         input.value = formatCurrency(unformatCurrency(originalValue));
         input.addEventListener('focus', () => { input.value = unformatCurrency(input.value) === 0 ? '' : unformatCurrency(input.value); });
-        input.addEventListener('blur', () => { input.value = formatCurrency(unformatCurrency(input.value)); calcularResultados(); });
+        input.addEventListener('blur', () => { input.value = formatCurrency(unformatCurrency(input.value)); });
     };
     
     const crearFila = (container, category, label, value, isEditable) => {
@@ -272,25 +277,24 @@ document.addEventListener('DOMContentLoaded', () => {
         addFormattingEvents(newRow.querySelector('.input-field'));
     };
 
-    function resetEditorForm() {
+    function resetEditorForm(crearFilasPorDefecto = true) {
         document.querySelectorAll('#page-editor .rows-container').forEach(c => c.innerHTML = '');
         document.getElementById('impuestosFijos').value = formatCurrency(0);
         
-        const defaultSections = {
-            ingresos: ['Encuestas', 'Claro Solvencia', 'WOM', 'Mexico', 'Tuves', 'Citas España', 'Bells'],
-            costoServicio: ['Sueldo Encuestas', 'Sueldo Claro Solvencia', 'Sueldo WOM', 'Sueldo Mexico', 'Sueldo Citas España', 'Sueldo Tuves', 'Sueldo Bells', 'Transferencia'],
-            gastosVentaMarketing: ['Anuncios', 'Publicidad', 'LinkedIn'],
-            gastosGeneralesAdmin: ['Sueldo Tecnología', 'Sueldo RRHH', 'Sueldo Contadora', 'Sueldo Administración', 'Sueldo Recepción', 'Sueldo Limpieza', 'Renta de Oficina', 'Internet', 'Dominios', 'Transporte'],
-            gastosMantenimiento: ['Mantenimiento (Estructura, A/C)', 'Fumigación', 'Switch', 'Artículos de Limpieza', 'Baterías', 'Bolsas de Basura']
-        };
-
-        for (const [key, labels] of Object.entries(defaultSections)) {
-            const container = document.querySelector(`[data-subsection-id="${key}"]`) || document.querySelector(`[data-section-id="${key}"] .rows-container`);
-            if (container) {
-                const categoryEl = container.closest('[data-section-id]');
-                const category = categoryEl ? categoryEl.dataset.sectionId : '';
-                const finalCategory = category === 'costoServicio' ? 'costo-servicio' : (category === 'gastosOperativos' ? 'gastos-op' : category);
-                labels.forEach(label => crearFila(container, finalCategory, label, 0, false));
+        if (crearFilasPorDefecto) {
+            const defaultSections = {
+                ingresos: { cat: 'ingresos', labels: ['Encuestas', 'Claro Solvencia', 'WOM', 'Mexico', 'Tuves', 'Citas España', 'Bells'] },
+                costoServicio: { cat: 'costo-servicio', labels: ['Sueldo Encuestas', 'Sueldo Claro Solvencia', 'Sueldo WOM', 'Sueldo Mexico', 'Sueldo Citas España', 'Sueldo Tuves', 'Sueldo Bells', 'Transferencia'] },
+                gastosVentaMarketing: { cat: 'gastos-op', labels: ['Anuncios', 'Publicidad', 'LinkedIn'] },
+                gastosGeneralesAdmin: { cat: 'gastos-op', labels: ['Sueldo Tecnología', 'Sueldo RRHH', 'Sueldo Contadora', 'Sueldo Administración', 'Sueldo Recepción', 'Sueldo Limpieza', 'Renta de Oficina', 'Internet', 'Dominios', 'Transporte'] },
+                gastosMantenimiento: { cat: 'gastos-op', labels: ['Mantenimiento (Estructura, A/C)', 'Fumigación', 'Switch', 'Artículos de Limpieza', 'Baterías', 'Bolsas de Basura'] }
+            };
+            for (const key in defaultSections) {
+                const container = document.querySelector(`[data-subsection-id="${key}"]`) || document.querySelector(`[data-section-id="${key}"] .rows-container`);
+                if (container) {
+                    const { cat, labels } = defaultSections[key];
+                    labels.forEach(label => crearFila(container, cat, label, 0, false));
+                }
             }
         }
         setupDateSelectors();
@@ -308,6 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
         yearSelect.value = currentYear;
     };
     
+    // ---- INICIALIZACIÓN ----
     showPage('dashboard');
     popularDashboard();
     resetEditorForm();
