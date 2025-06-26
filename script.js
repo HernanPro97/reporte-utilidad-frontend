@@ -1,10 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // ---- CONFIGURACIÓN ----
     const API_URL = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
         ? 'http://localhost:3000'
         : 'https://reporte-utilidad-backend.onrender.com';
 
     let graficoEvolucion, graficoCostos;
 
+    // ---- NAVEGACIÓN ----
     const pages = {
         dashboard: document.getElementById('page-dashboard'),
         editor: document.getElementById('page-editor'),
@@ -31,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showPage('editor');
     });
 
+    // ---- LÓGICA DE CARGA DE DATOS ----
     async function fetchData(endpoint) {
         try {
             const response = await fetch(`${API_URL}${endpoint}`);
@@ -272,7 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarKpiYGraficoTorta(year, month);
     };
     
-    // ---- INICIALIZACIÓN ----
     showPage('dashboard');
     popularDashboard();
     resetEditorForm();
