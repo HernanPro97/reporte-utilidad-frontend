@@ -1,3 +1,6 @@
+¡Claro\! Aquí tienes el código completo y corregido del archivo `script.js`. Simplemente puedes reemplazar todo el contenido de tu archivo actual con este.
+
+```javascript
 document.addEventListener('DOMContentLoaded', () => {
     // ---- CONFIGURACIÓN ----
     const API_URL = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
@@ -124,16 +127,71 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('graficoCostos')) return;
         const ctx = document.getElementById('graficoCostos').getContext('2d');
         if (graficoCostos) graficoCostos.destroy();
-        const hasData = data && (data.totalCostoServicio > 0 || data.totalGastosOperativos > 0 || data.impuestos > 0 || data.utilidadNeta > 0);
+
+        const labels = [];
+        const dataPoints = [];
+        const backgroundColors = [];
+
+        // Paleta de colores original
+        const colorPalette = {
+            'Costo del Servicio': 'rgb(239, 68, 68)',
+            'Gastos Operativos': 'rgb(245, 158, 11)',
+            'Impuestos': 'rgb(234, 179, 8)',
+            'Utilidad Neta': 'rgb(34, 197, 94)'
+        };
+
+        if (data) {
+            if (data.totalCostoServicio > 0) {
+                labels.push('Costo del Servicio');
+                dataPoints.push(data.totalCostoServicio);
+                backgroundColors.push(colorPalette['Costo del Servicio']);
+            }
+            if (data.totalGastosOperativos > 0) {
+                labels.push('Gastos Operativos');
+                dataPoints.push(data.totalGastosOperativos);
+                backgroundColors.push(colorPalette['Gastos Operativos']);
+            }
+            if (data.impuestos > 0) {
+                labels.push('Impuestos');
+                dataPoints.push(data.impuestos);
+                backgroundColors.push(colorPalette['Impuestos']);
+            }
+            // Solo añadir Utilidad Neta si es positiva
+            if (data.utilidadNeta > 0) {
+                labels.push('Utilidad Neta');
+                dataPoints.push(data.utilidadNeta);
+                backgroundColors.push(colorPalette['Utilidad Neta']);
+            }
+        }
+
+        const hasData = dataPoints.length > 0;
+
         const chartData = {
-            labels: ['Costo del Servicio', 'Gastos Operativos', 'Impuestos', 'Utilidad Neta'],
+            labels: hasData ? labels : ['Sin datos para mostrar'],
             datasets: [{
-                data: hasData ? [data.totalCostoServicio, data.totalGastosOperativos, data.impuestos, data.utilidadNeta] : [1],
-                backgroundColor: hasData ? ['rgb(239, 68, 68)', 'rgb(245, 158, 11)', 'rgb(234, 179, 8)','rgb(34, 197, 94)'] : '#e5e7eb',
-                hoverOffset: 4, borderWidth: 0,
+                data: hasData ? dataPoints : [1],
+                backgroundColor: hasData ? backgroundColors : ['#e5e7eb'],
+                hoverOffset: 4,
+                borderWidth: 0,
             }]
         };
-        graficoCostos = new Chart(ctx, { type: 'doughnut', data: chartData, options: { responsive: true, plugins: { legend: { position: 'top' }, title: { display: true, text: 'Estructura de Costos y Utilidad' }}}});
+
+        graficoCostos = new Chart(ctx, {
+            type: 'doughnut',
+            data: chartData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Estructura de Costos y Utilidad'
+                    }
+                }
+            }
+        });
     }
 
     async function cargarDetalleEnEditor(reporteId) {
@@ -227,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     const formatCurrency = (v, short = false) => { const value = Number(v) || 0; if (short) { if (Math.abs(value) >= 1000000) return `$${(value/1000000).toFixed(1)}M`; if (Math.abs(value) >= 1000) return `$${(value/1000).toFixed(1)}K`; return `$${value.toFixed(0)}`; } return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value); };
-    const unformatCurrency = (v) => typeof v !== 'string' ? v || 0 : parseFloat(String(v).replace(/[^0-9$,().\s]+/g, "")) || 0;
+    const unformatCurrency = (v) => typeof v !== 'string' ? v || 0 : parseFloat(String(v).replace(/[$,()]/g, '')) || 0;
     const addFormattingEvents = (input) => { const originalValue = input.value; input.value = formatCurrency(unformatCurrency(originalValue)); input.addEventListener('focus', () => { input.value = unformatCurrency(input.value) === 0 ? '' : unformatCurrency(input.value); }); input.addEventListener('blur', () => { input.value = formatCurrency(unformatCurrency(input.value)); }); };
     const crearFila = (container, category, label, value, isEditable) => { const newRow = document.createElement('div'); newRow.className = 'line-item-editable'; const labelHtml = isEditable ? `<input type="text" class="editable-label" placeholder="Nuevo Concepto..." value="${label}">` : `<label class="editable-label font-medium text-gray-700 w-full">${label}</label>`; newRow.innerHTML = `${labelHtml}<input type="text" class="input-field" data-category="${category}" value="${value}"><button class="remove-row-btn">&times;</button>`; container.appendChild(newRow); addFormattingEvents(newRow.querySelector('.input-field')); };
     
@@ -280,4 +338,4 @@ document.addEventListener('DOMContentLoaded', () => {
     resetEditorForm();
     document.getElementById('reporte-container').addEventListener('input', calcularResultados);
 });
-
+```
