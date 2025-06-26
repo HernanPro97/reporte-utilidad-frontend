@@ -74,16 +74,27 @@ document.addEventListener('DOMContentLoaded', () => {
     
     async function actualizarKpiYGraficoTorta(year, month) {
         const kpiData = await fetchData(`/api/kpi-summary/${year}/${month}`);
+        
         if (!kpiData) {
-            document.getElementById('kpi-utilidad-neta').textContent = formatCurrency(0);
+            // Poner todos los KPIs a cero si no hay datos
             document.getElementById('kpi-ingresos').textContent = formatCurrency(0);
-            document.getElementById('kpi-margen-neto').textContent = `0.00%`;
+            document.getElementById('kpi-utilidad-bruta').textContent = formatCurrency(0);
+            document.getElementById('kpi-utilidad-neta').textContent = formatCurrency(0);
+            document.getElementById('kpi-margen-bruto').textContent = '0.00%';
+            document.getElementById('kpi-margen-operativo').textContent = '0.00%';
+            document.getElementById('kpi-margen-neto').textContent = '0.00%';
             dibujarGraficoCostos(null);
             return;
         }
-        document.getElementById('kpi-utilidad-neta').textContent = formatCurrency(kpiData.utilidadNeta);
+
+        // Rellenar los KPIs con los datos recibidos
         document.getElementById('kpi-ingresos').textContent = formatCurrency(kpiData.totalIngresos);
+        document.getElementById('kpi-utilidad-bruta').textContent = formatCurrency(kpiData.utilidadBruta);
+        document.getElementById('kpi-utilidad-neta').textContent = formatCurrency(kpiData.utilidadNeta);
+        document.getElementById('kpi-margen-bruto').textContent = `${(kpiData.margenBruto || 0).toFixed(2)}%`;
+        document.getElementById('kpi-margen-operativo').textContent = `${(kpiData.margenOperativo || 0).toFixed(2)}%`;
         document.getElementById('kpi-margen-neto').textContent = `${(kpiData.margenNeto || 0).toFixed(2)}%`;
+        
         dibujarGraficoCostos(kpiData);
     }
     
@@ -219,7 +230,6 @@ document.addEventListener('DOMContentLoaded', () => {
         set('participacionSocio1', participacionSocio1, true); set('participacionSocio2', participacionSocio2, true);
         set('reservaLegal', reservaLegal, true); set('utilidadRetenida', utilidadRetenida);
 
-        // Actualizar las nuevas tarjetas de KPI
         document.getElementById('kpi-card-margen-bruto').textContent = `${porcBruta.toFixed(2)}%`;
         document.getElementById('kpi-card-margen-operativo').textContent = `${porcOperativa.toFixed(2)}%`;
         document.getElementById('kpi-card-margen-neto').textContent = `${porcNeta.toFixed(2)}%`;
