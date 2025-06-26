@@ -1,12 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // ---- CONFIGURACIÓN ----
     const API_URL = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
         ? 'http://localhost:3000'
         : 'https://reporte-utilidad-backend.onrender.com';
 
     let graficoEvolucion, graficoCostos;
 
-    // ---- NAVEGACIÓN ----
     const pages = {
         dashboard: document.getElementById('page-dashboard'),
         editor: document.getElementById('page-editor'),
@@ -33,7 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showPage('editor');
     });
 
-    // ---- LÓGICA DE CARGA DE DATOS ----
     async function fetchData(endpoint) {
         try {
             const response = await fetch(`${API_URL}${endpoint}`);
@@ -52,19 +49,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function popularDashboard() {
         const reportes = await fetchData('/api/reportes');
+        const dashboardContent = document.getElementById('dashboard-content');
         if (!reportes || reportes.length === 0) {
-            // Manejar estado vacío
-            document.getElementById('dashboard-content').classList.add('hidden');
+            if(dashboardContent) dashboardContent.classList.add('hidden');
             popularTablaHistorica([]);
             return;
         }
-        document.getElementById('dashboard-content').classList.remove('hidden');
+        if(dashboardContent) dashboardContent.classList.remove('hidden');
         
         setupDashboardSelectors(reportes);
         popularTablaHistorica(reportes);
         dibujarGraficoEvolucion(await fetchData('/api/chart-data'));
 
-        // Cargar datos del mes más reciente por defecto
         const lastReport = reportes[reportes.length - 1];
         if (lastReport) {
             document.getElementById('dashboard-year-select').value = lastReport.period.year;
@@ -183,11 +179,52 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('resumen-historico-body').addEventListener('click', e => { if (e.target.matches('.btn-ver-detalle')) cargarDetalleEnEditor(e.target.dataset.id); if (e.target.matches('.btn-eliminar')) eliminarReporte(e.target.dataset.id); });
     document.getElementById('reporte-container').addEventListener('input', e => { if (e.target.matches('.input-field')) calcularResultados(); });
     document.getElementById('reporte-container').addEventListener('click', e => { if (e.target.matches('.add-row-btn')) { const container = e.target.parentElement.previousElementSibling; crearFila(container, e.target.dataset.category, '', 0, true); } if (e.target.matches('.remove-row-btn')) { e.target.parentElement.remove(); calcularResultados(); } });
-    document.getElementById('save-data-btn').addEventListener('click', async () => { /* ... (sin cambios) ... */ });
-    async function eliminarReporte(reporteId) { /* ... (sin cambios) ... */ }
+    document.getElementById('save-data-btn').addEventListener('click', async () => {
+        const dataToSave = {
+            period: { month: document.getElementById('month-select').value, year: document.getElementById('year-select').value },
+            sectionsData: [],
+            impuestos: unformatCurrency(document.getElementById('impuestosFijos').value)
+        };
+        document.querySelectorAll('#page-editor .section').forEach(sectionEl => {
+            const section = { id: sectionEl.dataset.sectionId, subSections: [] };
+            sectionEl.querySelectorAll('.rows-container').forEach(container => {
+                const subSection = {
+                    containerId: container.dataset.subsectionId || sectionEl.dataset.sectionId,
+                    title: container.previousElementSibling?.textContent || null,
+                    rows: Array.from(container.querySelectorAll('.line-item-editable')).map(row => {
+                        const labelEl = row.querySelector('.editable-label');
+                        return {
+                            label: labelEl.tagName === 'INPUT' ? labelEl.value : labelEl.textContent,
+                            value: unformatCurrency(row.querySelector('.input-field').value),
+                            isEditable: labelEl.tagName === 'INPUT',
+                            category: row.querySelector('.input-field').dataset.category
+                        };
+                    }).filter(r => r.value !== 0)
+                };
+                if (subSection.rows.length > 0) section.subSections.push(subSection);
+            });
+            if (section.subSections.length > 0) dataToSave.sectionsData.push(section);
+        });
+        try {
+            const response = await fetch(`${API_URL}/api/reportes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dataToSave) });
+            const result = await response.json();
+            alert(result.message);
+            if (response.ok) { popularDashboard(); showPage('dashboard'); }
+        } catch(e) { alert('Error al guardar.'); console.error(e); }
+    });
+
+    async function eliminarReporte(reporteId) {
+        if (!confirm('¿Estás seguro de que deseas eliminar este reporte?')) return;
+        try {
+            const response = await fetch(`${API_URL}/api/reportes/${reporteId}`, { method: 'DELETE' });
+            const result = await response.json();
+            alert(result.message);
+            if (response.ok) popularDashboard();
+        } catch(error) { alert('No se pudo eliminar el reporte.'); }
+    }
     
-    const formatCurrency = (v, short = false) => { /* ... (sin cambios) ... */ };
-    const unformatCurrency = (v) => typeof v !== 'string' ? v || 0 : parseFloat(String(v).replace(/[^0-9.-]+/g, "")) || 0;
+    const formatCurrency = (v, short = false) => { const value = Number(v) || 0; if (short) { if (Math.abs(value) >= 1000000) return `$${(value/1000000).toFixed(1)}M`; if (Math.abs(value) >= 1000) return `$${(value/1000).toFixed(1)}K`; return `$${value.toFixed(0)}`; } return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value); };
+    const unformatCurrency = (v) => typeof v !== 'string' ? v || 0 : parseFloat(String(v).replace(/[^0-9$,().\s]+/g, "")) || 0;
     const addFormattingEvents = (input) => { const originalValue = input.value; input.value = formatCurrency(unformatCurrency(originalValue)); input.addEventListener('focus', () => { input.value = unformatCurrency(input.value) === 0 ? '' : unformatCurrency(input.value); }); input.addEventListener('blur', () => { input.value = formatCurrency(unformatCurrency(input.value)); }); };
     const crearFila = (container, category, label, value, isEditable) => { const newRow = document.createElement('div'); newRow.className = 'line-item-editable'; const labelHtml = isEditable ? `<input type="text" class="editable-label" placeholder="Nuevo Concepto..." value="${label}">` : `<label class="editable-label font-medium text-gray-700 w-full">${label}</label>`; newRow.innerHTML = `${labelHtml}<input type="text" class="input-field" data-category="${category}" value="${value}"><button class="remove-row-btn">&times;</button>`; container.appendChild(newRow); addFormattingEvents(newRow.querySelector('.input-field')); };
     
@@ -219,7 +256,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!monthSelect || !yearSelect) return;
         const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
         monthSelect.innerHTML = meses.map((m, i) => `<option value="${i}">${m}</option>`).join('');
-
         const years = reportes ? [...new Set(reportes.map(r => r.period.year))].sort((a,b) => b-a) : [new Date().getFullYear()];
         yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
     };
