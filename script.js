@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const API_URL = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
-        ? 'http://localhost:3000' 
+        ? 'http://localhost:3000'
         : 'https://reporte-utilidad-backend.onrender.com';
 
     let graficoEvolucion, graficoGastos;
@@ -52,25 +52,23 @@ document.addEventListener('DOMContentLoaded', () => {
             fetchData('/api/reportes'),
             fetchData('/api/chart-data')
         ]);
-
-        if (kpiData) {
-            popularKpiCards(kpiData);
-        } else {
-             // Poner KPIs en 0 si no hay datos
-            document.getElementById('kpi-utilidad-neta').textContent = formatCurrency(0);
-            document.getElementById('kpi-ingresos').textContent = formatCurrency(0);
-            document.getElementById('kpi-margen-neto').textContent = `0.00%`;
-            dibujarGraficoGastos({gastosVentaMarketing: 0, gastosGeneralesAdmin: 0, gastosMantenimiento: 0});
-        }
-        if (reportes) popularTablaHistorica(reportes);
-        if (chartData) dibujarGraficoEvolucion(chartData);
+        
+        popularKpiCards(kpiData);
+        popularTablaHistorica(reportes);
+        dibujarGraficoEvolucion(chartData);
+        dibujarGraficoGastos(kpiData ? kpiData.gastosPorSubCategoria : null);
     }
     
     function popularKpiCards(data) {
+        if (!data) {
+            document.getElementById('kpi-utilidad-neta').textContent = formatCurrency(0);
+            document.getElementById('kpi-ingresos').textContent = formatCurrency(0);
+            document.getElementById('kpi-margen-neto').textContent = `0.00%`;
+            return;
+        }
         document.getElementById('kpi-utilidad-neta').textContent = formatCurrency(data.utilidadNeta);
         document.getElementById('kpi-ingresos').textContent = formatCurrency(data.totalIngresos);
         document.getElementById('kpi-margen-neto').textContent = `${(data.margenNeto || 0).toFixed(2)}%`;
-        dibujarGraficoGastos(data.gastosPorSubCategoria);
     }
 
     function popularTablaHistorica(data) {
@@ -101,15 +99,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // ---- GRÁFICOS ----
     function dibujarGraficoEvolucion(data) {
+        if (!document.getElementById('graficoEvolucion')) return;
         const ctx = document.getElementById('graficoEvolucion').getContext('2d');
         if (graficoEvolucion) graficoEvolucion.destroy();
+        if (!data) return; 
         graficoEvolucion = new Chart(ctx, { type: 'line', data, options: { responsive: true, plugins: { legend: { position: 'top' }, title: { display: true, text: 'Evolución de Ingresos y Utilidad Neta' }}, scales: { y: { ticks: { callback: (v) => formatCurrency(v, true) }}} }});
     }
 
     function dibujarGraficoGastos(data) {
+        if(!document.getElementById('graficoGastos')) return;
         const ctx = document.getElementById('graficoGastos').getContext('2d');
         if (graficoGastos) graficoGastos.destroy();
-        const hasData = Object.values(data).some(v => v > 0);
+        const hasData = data && Object.values(data).some(v => v > 0);
         const chartData = {
             labels: ['Ventas y Mkt', 'Admin', 'Mantenimiento'],
             datasets: [{
@@ -137,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
             section.subSections.forEach(subSection => {
                 const container = document.querySelector(`#page-editor [data-subsection-id="${subSection.containerId}"]`) || document.querySelector(`#page-editor [data-section-id="${section.id}"] .rows-container`);
                 if (container) {
-                    container.innerHTML = ''; // Limpiar solo el contenedor de esta subsección
+                    container.innerHTML = ''; 
                     subSection.rows.forEach(rowData => {
                         crearFila(container, rowData.category, rowData.label, rowData.value, rowData.isEditable);
                     });
@@ -151,26 +152,41 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function calcularResultados() {
         const sumar = (cat) => Array.from(document.querySelectorAll(`#page-editor [data-category="${cat}"]`)).reduce((acc, input) => acc + unformatCurrency(input.value), 0);
-        
         const totalIngresos = sumar('ingresos'), totalCostoServicio = sumar('costo-servicio'), totalGastosOperativos = sumar('gastos-op');
         const utilidadBruta = totalIngresos - totalCostoServicio, utilidadOperativa = utilidadBruta - totalGastosOperativos;
         const impuestos = unformatCurrency(document.getElementById('impuestosFijos').value), utilidadNeta = utilidadOperativa - impuestos;
         
-        const porcBruta = totalIngresos > 0 ? (utilidadBruta / totalIngresos) * 100 : 0, porcOperativa = totalIngresos > 0 ? (utilidadOperativa / totalIngresos) * 100 : 0, porcNeta = totalIngresos > 0 ? (utilidadNeta / totalIngresos) * 100 : 0;
+        const sueldoDirector = utilidadNeta > 0 ? utilidadNeta * 0.12 : 0, sueldoPresidente = utilidadNeta > 0 ? utilidadNeta * 0.15 : 0;
+        const totalSueldosDirectivos = sueldoDirector + sueldoPresidente, utilidadNetaDespuesDirectivos = utilidadNeta - totalSueldosDirectivos;
+        const participacionSocio1 = utilidadNetaDespuesDirectivos > 0 ? utilidadNetaDespuesDirectivos * 0.10 : 0, participacionSocio2 = utilidadNetaDespuesDirectivos > 0 ? utilidadNetaDespuesDirectivos * 0.10 : 0;
+        const utilidadAntesReservaLegal = utilidadNetaDespuesDirectivos - participacionSocio1 - participacionSocio2;
+        const reservaLegal = utilidadAntesReservaLegal > 0 ? utilidadAntesReservaLegal * 0.10 : 0, utilidadRetenida = utilidadAntesReservaLegal - reservaLegal;
 
-        document.getElementById('totalIngresos').textContent = formatCurrency(totalIngresos);
-        document.getElementById('totalCostoServicio').textContent = `(${formatCurrency(totalCostoServicio)})`;
-        document.getElementById('totalGastosOperativos').textContent = `(${formatCurrency(totalGastosOperativos)})`;
-        document.getElementById('utilidadBruta').textContent = formatCurrency(utilidadBruta);
-        document.getElementById('porcentajeUtilidadBruta').textContent = `${porcBruta.toFixed(2)}%`;
-        document.getElementById('utilidadOperativa').textContent = formatCurrency(utilidadOperativa);
-        document.getElementById('porcentajeUtilidadOperativa').textContent = `${porcNeta.toFixed(2)}%`;
-        document.getElementById('utilidadAntesImpuestos').textContent = formatCurrency(utilidadOperativa);
-        document.getElementById('utilidadNeta').textContent = formatCurrency(utilidadNeta);
-        document.getElementById('porcentajeUtilidadNeta').textContent = `${porcNeta.toFixed(2)}%`;
+        const porcBruta = totalIngresos > 0 ? (utilidadBruta / totalIngresos) * 100 : 0, porcOperativa = totalIngresos > 0 ? (utilidadOperativa / totalIngresos) * 100 : 0, porcNeta = totalIngresos > 0 ? (utilidadNeta / totalIngresos) * 100 : 0;
+        
+        const set = (id, val, isCost=false) => { const el=document.getElementById(id); if(el) el.textContent = isCost ? `(${formatCurrency(val)})` : formatCurrency(val); };
+        
+        set('totalIngresos', totalIngresos);
+        set('totalCostoServicio', totalCostoServicio, true);
+        set('totalGastosOperativos', totalGastosOperativos, true);
+        set('utilidadBruta', utilidadBruta);
+        set('porcentajeUtilidadBruta', `${porcBruta.toFixed(2)}%`);
+        set('utilidadOperativa', utilidadOperativa);
+        set('porcentajeUtilidadOperativa', `${porcOperativa.toFixed(2)}%`);
+        set('utilidadAntesImpuestos', utilidadOperativa);
+        set('utilidadNeta', utilidadNeta);
+        set('porcentajeUtilidadNeta', `${porcNeta.toFixed(2)}%`);
+        
+        set('sueldoDirector', sueldoDirector, true);
+        set('sueldoPresidente', sueldoPresidente, true);
+        set('totalSueldosDirectivos', totalSueldosDirectivos, true);
+        set('utilidadNetaDespuesDirectivos', utilidadNetaDespuesDirectivos);
+        set('participacionSocio1', participacionSocio1, true);
+        set('participacionSocio2', participacionSocio2, true);
+        set('reservaLegal', reservaLegal, true);
+        set('utilidadRetenida', utilidadRetenida);
     }
 
-    // ---- EVENT LISTENERS ----
     document.getElementById('resumen-historico-body').addEventListener('click', e => {
         if (e.target.matches('.btn-ver-detalle')) cargarDetalleEnEditor(e.target.dataset.id);
         if (e.target.matches('.btn-eliminar')) eliminarReporte(e.target.dataset.id);
@@ -180,13 +196,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('reporte-container').addEventListener('click', e => {
         if (e.target.matches('.add-row-btn')) {
             const container = e.target.parentElement.previousElementSibling;
-            const category = e.target.dataset.category;
-            crearFila(container, category, '', 0, true);
+            crearFila(container, e.target.dataset.category, '', 0, true);
         }
-        if (e.target.matches('.remove-row-btn')) {
-            e.target.parentElement.remove();
-            calcularResultados();
-        }
+        if (e.target.matches('.remove-row-btn')) { e.target.parentElement.remove(); calcularResultados(); }
     });
 
     document.getElementById('save-data-btn').addEventListener('click', async () => {
@@ -199,28 +211,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const section = { id: sectionEl.dataset.sectionId, subSections: [] };
             sectionEl.querySelectorAll('.rows-container').forEach(container => {
                 const subSection = {
-                    containerId: container.dataset.subsectionId,
+                    containerId: container.dataset.subsectionId || sectionEl.dataset.sectionId,
                     title: container.previousElementSibling?.textContent || null,
-                    rows: Array.from(container.querySelectorAll('.line-item-editable')).map(row => ({
-                        label: row.querySelector('.editable-label').value,
-                        value: unformatCurrency(row.querySelector('.input-field').value),
-                        isEditable: true,
-                        category: row.querySelector('.input-field').dataset.category
-                    })).filter(r => r.value !== 0)
+                    rows: Array.from(container.querySelectorAll('.line-item-editable')).map(row => {
+                        const labelEl = row.querySelector('.editable-label');
+                        return {
+                            label: labelEl.tagName === 'INPUT' ? labelEl.value : labelEl.textContent,
+                            value: unformatCurrency(row.querySelector('.input-field').value),
+                            isEditable: labelEl.tagName === 'INPUT',
+                            category: row.querySelector('.input-field').dataset.category
+                        };
+                    }).filter(r => r.value !== 0)
                 };
                 if (subSection.rows.length > 0) section.subSections.push(subSection);
             });
             if (section.subSections.length > 0) dataToSave.sectionsData.push(section);
         });
-        
         try {
             const response = await fetch(`${API_URL}/api/reportes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dataToSave) });
             const result = await response.json();
             alert(result.message);
-            if (response.ok) {
-                popularDashboard();
-                showPage('dashboard');
-            }
+            if (response.ok) { popularDashboard(); showPage('dashboard'); }
         } catch(e) { alert('Error al guardar.'); console.error(e); }
     });
 
@@ -234,32 +245,29 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(error) { alert('No se pudo eliminar el reporte.'); }
     }
     
-    // ---- HELPER FUNCTIONS ----
     const formatCurrency = (v, short = false) => {
         const value = Number(v) || 0;
         if (short) {
-            if (Math.abs(value) >= 1_000_000) return `$${(value/1_000_000).toFixed(1)}M`;
-            if (Math.abs(value) >= 1_000) return `$${(value/1_000).toFixed(1)}K`;
+            if (Math.abs(value) >= 1000000) return `$${(value/1000000).toFixed(1)}M`;
+            if (Math.abs(value) >= 1000) return `$${(value/1000).toFixed(1)}K`;
             return `$${value.toFixed(0)}`;
         }
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
     };
-    const unformatCurrency = (v) => typeof v !== 'string' ? v || 0 : parseFloat(v.replace(/[^0-9$,().\s]+/g, "")) || 0;
+    const unformatCurrency = (v) => typeof v !== 'string' ? v || 0 : parseFloat(String(v).replace(/[^0-9$,().\s]+/g, "")) || 0;
     
     const addFormattingEvents = (input) => {
-        input.addEventListener('focus', () => input.type = 'number');
-        input.addEventListener('blur', () => {
-            input.type = 'text';
-            input.value = formatCurrency(input.value);
-            calcularResultados();
-        });
+        const originalValue = input.value;
+        input.value = formatCurrency(unformatCurrency(originalValue));
+        input.addEventListener('focus', () => { input.value = unformatCurrency(input.value) === 0 ? '' : unformatCurrency(input.value); });
+        input.addEventListener('blur', () => { input.value = formatCurrency(unformatCurrency(input.value)); calcularResultados(); });
     };
     
     const crearFila = (container, category, label, value, isEditable) => {
         const newRow = document.createElement('div');
         newRow.className = 'line-item-editable';
-        const labelHtml = isEditable ? `<input type="text" class="editable-label" placeholder="Nuevo Concepto..." value="${label}">` : `<label class="editable-label">${label}</label>`;
-        newRow.innerHTML = `${labelHtml}<input type="text" class="input-field" data-category="${category}" value="${formatCurrency(value)}"><button class="remove-row-btn">&times;</button>`;
+        const labelHtml = isEditable ? `<input type="text" class="editable-label" placeholder="Nuevo Concepto..." value="${label}">` : `<label class="editable-label font-medium text-gray-700 w-full">${label}</label>`;
+        newRow.innerHTML = `${labelHtml}<input type="text" class="input-field" data-category="${category}" value="${value}"><button class="remove-row-btn">&times;</button>`;
         container.appendChild(newRow);
         addFormattingEvents(newRow.querySelector('.input-field'));
     };
@@ -267,6 +275,24 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetEditorForm() {
         document.querySelectorAll('#page-editor .rows-container').forEach(c => c.innerHTML = '');
         document.getElementById('impuestosFijos').value = formatCurrency(0);
+        
+        const defaultSections = {
+            ingresos: ['Encuestas', 'Claro Solvencia', 'WOM', 'Mexico', 'Tuves', 'Citas España', 'Bells'],
+            costoServicio: ['Sueldo Encuestas', 'Sueldo Claro Solvencia', 'Sueldo WOM', 'Sueldo Mexico', 'Sueldo Citas España', 'Sueldo Tuves', 'Sueldo Bells', 'Transferencia'],
+            gastosVentaMarketing: ['Anuncios', 'Publicidad', 'LinkedIn'],
+            gastosGeneralesAdmin: ['Sueldo Tecnología', 'Sueldo RRHH', 'Sueldo Contadora', 'Sueldo Administración', 'Sueldo Recepción', 'Sueldo Limpieza', 'Renta de Oficina', 'Internet', 'Dominios', 'Transporte'],
+            gastosMantenimiento: ['Mantenimiento (Estructura, A/C)', 'Fumigación', 'Switch', 'Artículos de Limpieza', 'Baterías', 'Bolsas de Basura']
+        };
+
+        for (const [key, labels] of Object.entries(defaultSections)) {
+            const container = document.querySelector(`[data-subsection-id="${key}"]`) || document.querySelector(`[data-section-id="${key}"] .rows-container`);
+            if (container) {
+                const categoryEl = container.closest('[data-section-id]');
+                const category = categoryEl ? categoryEl.dataset.sectionId : '';
+                const finalCategory = category === 'costoServicio' ? 'costo-servicio' : (category === 'gastosOperativos' ? 'gastos-op' : category);
+                labels.forEach(label => crearFila(container, finalCategory, label, 0, false));
+            }
+        }
         setupDateSelectors();
         calcularResultados();
     }
@@ -282,9 +308,8 @@ document.addEventListener('DOMContentLoaded', () => {
         yearSelect.value = currentYear;
     };
     
-    // ---- INICIALIZACIÓN ----
     showPage('dashboard');
     popularDashboard();
-    setupDateSelectors();
-    calcularResultados();
+    resetEditorForm();
+    document.getElementById('reporte-container').addEventListener('input', calcularResultados);
 });
