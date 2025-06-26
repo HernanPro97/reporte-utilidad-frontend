@@ -1,6 +1,3 @@
-¡Claro\! Aquí tienes el código completo y corregido del archivo `script.js`. Simplemente puedes reemplazar todo el contenido de tu archivo actual con este.
-
-```javascript
 document.addEventListener('DOMContentLoaded', () => {
     // ---- CONFIGURACIÓN ----
     const API_URL = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
@@ -338,4 +335,3 @@ document.addEventListener('DOMContentLoaded', () => {
     resetEditorForm();
     document.getElementById('reporte-container').addEventListener('input', calcularResultados);
 });
-```
